@@ -19,6 +19,10 @@ import Xmobar.Plugins.Monitors.Common
 
 import qualified Control.Exception as CE
 
+import Control.Monad.Reader (asks)
+import qualified Data.ByteString.Lazy.Char8 as B
+import Data.Char (toLower)
+import Data.IORef (newIORef, readIORef)
 import Network.HTTP.Conduit
 import Network.HTTP.Types.Status
 import Network.HTTP.Types.Method
@@ -208,15 +212,21 @@ defUrl = "https://tgftp.nws.noaa.gov/data/observations/metar/decoded/"
 stationUrl :: String -> String
 stationUrl station = defUrl ++ station ++ ".TXT"
 
-getData :: String -> IO String
-getData station = CE.catch (do
-    manager <- newManager tlsManagerSettings
-    request <- parseUrlThrow $ stationUrl station
-    res <- httpLbs request manager
-    return $  B.unpack $ responseBody res
-    ) errHandler
-    where errHandler :: CE.SomeException -> IO String
-          errHandler _ = return "<Could not retrieve data>"
+-- | Get the decoded weather data from the given station.
+getData :: String -> Monitor String
+getData station = do
+    man' <- io . readIORef =<< asks manager
+    case man' of
+        -- If an error occured while creating the manager, try again.
+        Nothing  -> io (newIORef =<< makeNewManager) *> getData station
+        Just man -> io $ CE.catch
+            (do request <- parseUrlThrow $ stationUrl station
+                res <- httpLbs request man
+                return $ B.unpack $ responseBody res)
+            errHandler
+  where
+    errHandler :: CE.SomeException -> IO String
+    errHandler _ = return "<Could not retrieve data>"
 
 formatSk :: Eq p => [(p, p)] -> p -> p
 formatSk ((a,b):sks) sk = if a == sk then b else formatSk sks sk
@@ -256,13 +266,22 @@ weatherReady :: [String] -> Monitor Bool
 weatherReady str = do
     initRequest <- parseUrlThrow $ stationUrl $ head str
     let request = initRequest{method = methodHead}
-    io $ CE.catch ( do
-        manager <- newManager tlsManagerSettings
-        res     <- httpLbs request manager
-        return $ checkResult $responseStatus res ) errHandler
-    where errHandler :: CE.SomeException -> IO Bool
-          errHandler _ = return False
-          checkResult status
-            | statusIsServerError status = False
-            | statusIsClientError status = False
-            | otherwise = True
+    man' <- io . readIORef =<< asks manager
+    case man' of
+        -- If an error occured while creating the manager, try again.
+        Nothing  -> io (newIORef =<< makeNewManager) *> weatherReady str
+        Just man -> io $ CE.catch
+            (do res  <- httpLbs request man
+                return $ checkResult $ responseStatus res)
+            errHandler
+  where
+    -- | If any exception occurs, indicate that the monitor is not ready.
+    errHandler :: CE.SomeException -> IO Bool
+    errHandler _ = return False
+
+    -- | Check for and indicate any errors in the http response.
+    checkResult :: Status -> Bool
+    checkResult status
+        | statusIsServerError status = False
+        | statusIsClientError status = False
+        | otherwise = True

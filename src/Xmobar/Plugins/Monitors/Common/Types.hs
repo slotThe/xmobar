@@ -25,8 +25,9 @@ module Xmobar.Plugins.Monitors.Common.Types ( Monitor
                                             , io
                                             ) where
 
-import Data.IORef
-import Control.Monad.Reader
+import Control.Monad.Reader (ReaderT, ask, liftIO)
+import Data.IORef (IORef, modifyIORef, newIORef, readIORef)
+
 
 type Monitor a = ReaderT MConfig IO a
 

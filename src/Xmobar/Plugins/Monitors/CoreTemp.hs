@@ -25,8 +25,7 @@ import Data.Char (isDigit)
 coreTempConfig :: IO MConfig
 coreTempConfig = mkMConfig
        "Temp: <core0>C" -- template
-       (map ((++) "core" . show) [0 :: Int ..]) -- available
-                                                -- replacements
+       (map ((++) "core" . show) [0 :: Int ..]) -- available replacements
 
 -- |
 -- Function retrieves monitor string holding the core temperature

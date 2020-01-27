@@ -22,6 +22,7 @@ import Network.HTTP.Conduit
        (parseRequest, newManager, tlsManagerSettings, httpLbs,
         responseBody)
 import Data.ByteString.Lazy.Char8 as B
+import Data.IORef (newIORef, readIORef)
 import Text.Read (readMaybe)
 import Text.Parsec
 import Text.Parsec.String
@@ -40,16 +41,21 @@ newtype UvInfo = UV { index :: String }
 uvURL :: String
 uvURL = "https://uvdata.arpansa.gov.au/xml/uvvalues.xml"
 
-getData :: IO String
-getData =
-  CE.catch (do request <- parseRequest uvURL
-               manager <- newManager tlsManagerSettings
-               res <- httpLbs request manager
-               return $ B.unpack $ responseBody res)
-           errHandler
-  where errHandler
-          :: CE.SomeException -> IO String
-        errHandler _ = return "<Could not retrieve data>"
+-- | Get the UV data from the given url.
+getData :: Monitor String
+getData = do
+    man' <- io . readIORef =<< asks manager
+    case man' of
+        -- If an error occured while creating the manager, try again.
+        Nothing  -> io (newIORef =<< makeNewManager) *> getData
+        Just man -> io $ CE.catch
+            (do request <- parseRequest uvURL
+                res <- httpLbs request man
+                return $ B.unpack $ responseBody res)
+            errHandler
+  where
+    errHandler :: CE.SomeException -> IO String
+    errHandler _ = return "<Could not retrieve data>"
 
 textToXMLDocument :: String -> Either ParseError [XML]
 textToXMLDocument = parse document ""
