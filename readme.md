@@ -740,6 +740,11 @@ something like:
     variable is not reported.
     - short option: `-w`
     - Default: ""
+  - `--useManager` _bool_ : Whether to use one single manager per monitor for
+    managing network connections or create a new one every time a connection is
+    made.
+    - Short option: `-m`
+    - Default: True
 - Variables that can be used with the `-t`/`--template` argument:
 	    `station`, `stationState`, `year`, `month`, `day`, `hour`,
 	    `windCardinal`, `windAzimuth`, `windMph`, `windKnots`, `windMs`, `windKmh`
@@ -1414,9 +1419,14 @@ following differences:
 
 ### `UVMeter`
 
-- Aliases to "uv " + station id. For example: `%uv brisbane%` or `%uv
-  alice springs%`
-- Args: default monitor arguments.
+- Aliases to "uv " + station id. For example: `%uv Brisbane%` or `%uv
+  Alice Springs%`
+- Args: default monitor arguments, plus:
+  - `--useManager` _bool_ : Whether to use one single manager per monitor for
+    managing network connections or create a new one every time a connection is
+    made.
+    - Short option: `-m`
+    - Default: True
 
 - *Reminder:* Keep the refresh rate high, to avoid making unnecessary
   requests every time the plug-in is run.
@@ -1424,7 +1434,7 @@ following differences:
   http://www.arpansa.gov.au/uvindex/realtime/xml/uvvalues.xml
 - Example:
 
-        Run UVMeter "brisbane" ["-H", "3", "-L", "3", "--low", "green", "--high", "red"] 900
+        Run UVMeter "Brisbane" ["-H", "3", "-L", "3", "--low", "green", "--high", "red"] 900
 
 ## Executing External Commands
 

@@ -14,6 +14,9 @@ _New features_
     `offString` (thanks to *slotThe*).
   - `Battery` and `BatteryN` now support FreeBSD (thanks to Dhananjay
     Balan).
+  - New option `--useManager` for `Weather` and `UVMeter` to decide whether to
+    use one single manager per monitor for managing network connections or
+    create a new one every time a connection is made.
 
 ## Version 0.32 (December, 2019)
 
