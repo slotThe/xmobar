@@ -164,8 +164,8 @@ instance Exec Monitors where
     start (TopProc a r) = startTop a r
     start (TopMem a r) = runM a topMemConfig runTopMem r
 #ifdef WEATHER
-    start (Weather s a r) = runMD (s : a) weatherConfig runWeather r weatherReady
-    start (WeatherX s c a r) = runMD (s : a) weatherConfig (runWeather' c) r weatherReady
+    start (Weather  s   a r) = startWeather    s a r
+    start (WeatherX s c a r) = startWeather' c s a r
 #endif
     start (Thermal z a r) = runM (a ++ [z]) thermalConfig runThermal r
     start (ThermalZone z a r) =
