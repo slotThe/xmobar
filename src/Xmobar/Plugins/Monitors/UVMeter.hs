@@ -19,15 +19,39 @@ import Xmobar.Plugins.Monitors.Common
 
 import qualified Control.Exception as CE
 import Network.HTTP.Conduit
-       (parseRequest, newManager, tlsManagerSettings, httpLbs,
-        responseBody)
+    ( Manager
+    , httpLbs
+    , managerConnCount
+    , newManager
+    , parseRequest
+    , responseBody
+    , tlsManagerSettings
+    )
 import Data.ByteString.Lazy.Char8 as B
-import Data.IORef (newIORef, readIORef)
+import Data.Maybe (fromMaybe)
+import System.Console.GetOpt (ArgDescr(ReqArg), OptDescr(Option))
 import Text.Read (readMaybe)
 import Text.Parsec
 import Text.Parsec.String
 import Control.Monad (void)
 
+
+-- | Options the user may specify.
+newtype UVMeterOpts = UVMeterOpts
+  { useManager :: Bool
+  }
+
+-- | Default values for options.
+defaultOpts :: UVMeterOpts
+defaultOpts = UVMeterOpts
+  { useManager = True
+  }
+
+-- | Apply options.
+options :: [OptDescr (UVMeterOpts -> UVMeterOpts)]
+options =
+  [ Option "m" ["useManager"] (ReqArg (\m o -> o { useManager = read m }) "") ""
+  ]
 
 uvConfig :: IO MConfig
 uvConfig = mkMConfig
@@ -42,17 +66,15 @@ uvURL :: String
 uvURL = "https://uvdata.arpansa.gov.au/xml/uvvalues.xml"
 
 -- | Get the UV data from the given url.
-getData :: Monitor String
-getData = do
-    man' <- io . readIORef =<< asks manager
-    case man' of
-        -- If an error occured while creating the manager, try again.
-        Nothing  -> io (newIORef =<< makeNewManager) *> getData
-        Just man -> io $ CE.catch
-            (do request <- parseRequest uvURL
-                res <- httpLbs request man
-                return $ B.unpack $ responseBody res)
-            errHandler
+getData :: Maybe Manager -> IO String
+getData uvMan = CE.catch
+    (do man <- flip fromMaybe uvMan <$> mkManager
+        -- Create a new manager if none was present or the user does not want to
+        -- use one, otherwise use the provided manager.
+        request <- parseRequest uvURL
+        res <- httpLbs request man
+        return $ B.unpack $ responseBody res)
+    errHandler
   where
     errHandler :: CE.SomeException -> IO String
     errHandler _ = return "<Could not retrieve data>"
@@ -75,11 +97,23 @@ getUVRating _ (Element "index" [] [Body rate]:_) = readMaybe rate
 getUVRating locID (_:xs) = getUVRating locID xs
 getUVRating _ [] = Nothing
 
+-- | Start the uvmeter monitor, create a new 'Maybe Manager', should the user have
+-- chosen to use one.
+startUVMeter
+    :: String    -- ^ Station
+    -> [String]  -- ^ User supplied arguments
+    -> Int       -- ^ Update rate
+    -> (String -> IO ())
+    -> IO ()
+startUVMeter station args rate cb = do
+    opts  <- parseOptsWith options defaultOpts (getArgvs args)
+    uvMan <- tryMakeManager opts
+    runM (station : args) uvConfig (runUVMeter uvMan) rate cb
 
-runUVMeter :: [String] -> Monitor String
-runUVMeter [] = return "N.A."
-runUVMeter (s:_) = do
-    resp <- io getData
+runUVMeter :: Maybe Manager -> [String] -> Monitor String
+runUVMeter _ [] = return "N.A."
+runUVMeter uvMan (s:_) = do
+    resp <- io $ getData uvMan
     case textToXMLDocument resp of
         Right doc -> formatUVRating (getUVRating s doc)
         Left _ -> getConfigValue naString
@@ -161,3 +195,15 @@ attribute = do
     char '"'
     spaces
     return (Attribute (name, value))
+
+-- | Possibly create a new 'Manager', based upon the users preference.  If one
+-- is created, this 'Manager' will be used throughout the monitor.
+tryMakeManager :: UVMeterOpts -> IO (Maybe Manager)
+tryMakeManager opts =
+    if useManager opts
+        then Just <$> mkManager
+        else pure Nothing
+
+-- | Create a new 'Manager' for managing network connections.
+mkManager :: IO Manager
+mkManager = newManager $ tlsManagerSettings {managerConnCount = 1}
