@@ -19,6 +19,7 @@ module Xmobar.Plugins.Monitors.Common.Run ( runM
                                           , runMD
                                           , runMB
                                           , runMBD
+                                          , getArgvs
                                           ) where
 
 import Control.Exception (SomeException,handle)
@@ -54,6 +55,13 @@ options =
     , Option "T" ["maxtwidth"] (ReqArg MaxTotalWidth "Maximum total width") "Maximum total width"
     , Option "E" ["maxtwidthellipsis"] (ReqArg MaxTotalWidthEllipsis "Maximum total width ellipsis") "Ellipsis to be added to the total text when it has reached its max width."
     ]
+
+-- | Get all argument values out of a list of arguments.
+getArgvs :: [String] -> [String]
+getArgvs args =
+    case getOpt Permute options args of
+        (_, n, []  ) -> n
+        (_, _, errs) -> errs
 
 doArgs :: [String]
        -> ([String] -> Monitor String)
