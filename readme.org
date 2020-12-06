@@ -30,9 +30,8 @@ Xmobar is available from [[http://hackage.haskell.org/package/xmobar/][Hackage]]
   cabal install xmobar
 #+end_src
 
-Xmobar versions >= 0.27 require GHC version >= 8.0.2. Due to an
-intermittent bug in GHC, we recommend using either GHC 8.0.2, 8.2.2 or
-8.6.
+Starting with version 0.35.1, xmobar now requires at least GHC version
+8.4.x. to build. See [[https://github.com/jaor/xmobar/issues/461][this issue]] for more information.
 
 See below for a list of optional compilation flags that will enable some
 optional plugins. For instance, to install xmobar with all the bells and
@@ -50,8 +49,8 @@ code in a variety of ways:
 - From [[http://hackage.haskell.org/package/xmobar/][Hackage]]. Just download the latest release from xmobar's hackage
   page.
 
-- From [[http://github.com/jaor/xmobar/][Github]]. You can also obtain a tarball in [[https://github.com/jaor/xmobar/downloads][Github's downloads
-  page]]. You'll find there links to each tagged release.
+- From [[http://github.com/jaor/xmobar/][Github]]. There are also tarballs available for every tagged
+  release on [[https://github.com/jaor/xmobar/releases][Github's releases page]]
 
 - From the bleeding edge repo. If you prefer to live dangerously, just
   get the latest and greatest (and buggiest, I guess) using git:
@@ -64,11 +63,18 @@ If you have cabal installed, you can now use it from within xmobar's
 source tree:
 
 #+begin_src shell
-  cabal install -fall_extensions
+  cabal install --flags="all_extensions"
 #+end_src
 
-There is also a barebones =stack.yaml= file that will allow you to build
-the xmobar executable with stances of the form:
+There is also a barebones =stack.yaml= file that will allow you to
+install the xmobar executable with
+
+#+begin_src shell
+  stack install
+#+end_src
+
+See the =stack.yaml= file for the enabled extensions. You can also pass
+them to =stack= directly:
 
 #+begin_src shell
   stack install --flag xmobar:all_extensions
@@ -413,30 +419,29 @@ This is the list of command line options (the output of xmobar --help):
   Usage: xmobar [OPTION...] [FILE]
   Options:
     -h, -?        --help                 This help
-    -V            --version              Show version information
     -v            --verbose              Emit verbose debugging messages
-    -r            --recompile            Force recompilation (for Haskell FILE)
+    -r            --recompile            Force recompilation
+    -V            --version              Show version information
     -f font name  --font=font name       Font name
     -N font name  --add-font=font name   Add to the list of additional fonts
     -w class      --wmclass=class        X11 WM_CLASS property
     -n name       --wmname=name          X11 WM_NAME property
-    -B bg color   --bgcolor=bg color     Background color. Default black
-    -F fg color   --fgcolor=fg color     Foreground color. Default grey
-    -A alpha      --alpha=alpha          Transparency: 0 is transparent
-                                         and 255 (the default) is opaque
+    -B bg color   --bgcolor=bg color     The background color. Default black
+    -F fg color   --fgcolor=fg color     The foreground color. Default grey
+    -i path       --iconroot=path        Root directory for icon pattern paths. Default '.'
+    -A alpha      --alpha=alpha          Transparency: 0 is transparent, 255 is opaque. Default: 255
     -o            --top                  Place xmobar at the top of the screen
     -b            --bottom               Place xmobar at the bottom of the screen
-    -p            --position=position    Specify position, same as in config file
-    -d            --dock                 Try to start xmobar as a dock
+    -d            --dock                 Don't override redirect from WM and function as a dock
     -a alignsep   --alignsep=alignsep    Separators for left, center and right text
                                          alignment. Default: '}{'
     -s char       --sepchar=char         Character used to separate commands in
                                          the output template. Default '%'
     -t template   --template=template    Output template
-    -i path       --iconroot=path        Default directory for icon pattern files
     -c commands   --commands=commands    List of commands to be executed
     -C command    --add-command=command  Add to the list of commands to be executed
     -x screen     --screen=screen        On which X screen number to start
+    -p position   --position=position    Specify position of xmobar. Same syntax as in config file
 
   Mail bug reports and suggestions to <mail@jao.io>
 #+end_src
@@ -558,7 +563,7 @@ brightness value.
 Monitors accept a common set of arguments, described in the first
 subsection below. In addition, some monitors accept additional options
 that are specific to them. When specifying the list of arguments in your
-configuration, the common options come first, followed by "--", followed
+configuration, the common options come first, followed by =--=, followed
 by any monitor-specific options.
 
 These are the options available for all monitors below:
@@ -770,7 +775,9 @@ something like:
   =windKmh= =visibility=, =skyCondition=, =weather=, =tempC=, =tempF=,
   =dewPointC=, =dewPointF=, =rh=, =pressure=
 - Default template: =<station>: <tempC>C, rh <rh>% (<hour>)=
-- Retrieves weather information from http://tgftp.nws.noaa.gov.
+- Retrieves weather information from http://tgftp.nws.noaa.gov. Here is
+  an [[https://tgftp.nws.noaa.gov/data/observations/metar/decoded/CYLD.TXT][example]], also showcasing the kind of information that may be
+  extracted.
 
 ** =WeatherX StationID SkyConditions Args RefreshRate=
 
@@ -832,19 +839,21 @@ such as =("clear", "<icon=weather-clear.xbm/>")=.
 - Thresholds are expressed in Kb/s
 - Args: default monitor arguments, plus:
 
-  - =--rx-icon-pattern=: dynamic string for reception rate in =rxipat=.
-  - =--tx-icon-pattern=: dynamic string for transmission rate in
-    =txipat=
-  - =--devices=: comma-separated list of devices to show.
+- =--rx-icon-pattern=: dynamic string for reception rate in =rxipat=.
+- =--tx-icon-pattern=: dynamic string for transmission rate in =txipat=
+- =--devices=: comma-separated list of devices to show.
 
-- Variables that can be used with the =-t=/=--template= argument: =dev=,
-  =rx=, =tx=, =rxbar=, =rxvbar=, =rxipat=, =txbar=, =txvbar=, =txipat=.
-  Reception and transmission rates (=rx= and =tx=) are displayed in
-  Kbytes per second, and you can set the =-S= to "True" to make them
-  displayed with units (the string "Kb/s").
+- Variables that can be used with the =-t=/=--template= argument:
+  =dev=, =rx=, =tx=, =rxbar=, =rxvbar=, =rxipat=, =txbar=, =txvbar=,
+  =txipat=.
+
+Reception and transmission rates (=rx= and =tx=) are displayed in Kbytes
+per second, and you can set the =-S= to "True" to make them displayed
+with units (the string "Kb/s").
 - Default template: =<dev>: <rx>KB|<tx>KB=
 - Example of usage of =--devices= option:
-  =["--", "--devices", "wlp2s0,enp0s20f41"]=
+
+    =["--", "--devices", "wlp2s0,enp0s20f41"]=
 
 ** =Wireless Interface Args RefreshRate=
 
@@ -1008,7 +1017,7 @@ such as =("clear", "<icon=weather-clear.xbm/>")=.
                  600
   #+end_src
 
-  In the above example, the thresholds before the "--" separator affect
+  In the above example, the thresholds before the =--= separator affect
   only the =<left>= and =<leftbar>= fields, while those after the
   separator affect how =<watts>= is displayed. For this monitor, neither
   the generic nor the specific options have any effect on =<timeleft>=.
@@ -1345,12 +1354,11 @@ than one battery.
 
 ** =Alsa Mixer Element Args=
 
-Like [[#volume-mixer-element-args-refreshrate][Volume]], but with the following differences:
+Like [[=Volume Mixer Element Args RefreshRate=][Volume]] but with the following differences:
 
 - Uses event-based refreshing via =alsactl monitor= instead of polling,
-  so it will refresh
-instantly when there's a volume change, and won't use CPU until a change
-happens.
+  so it will refresh instantly when there's a volume change, and won't
+  use CPU until a change happens.
 - Aliases to =alsa:= followed by the mixer name and element name
   separated by a colon. Thus, =Alsa "default" "Master" []= can be used
   as =%alsa:default:Master%=.
@@ -1821,8 +1829,8 @@ will display "N/A" if for some reason the =date= invocation fails.
   input for Locale is not recommended.
 
 - Zone is the name of the TimeZone. It is assumed that the tz database
-  is stored in /usr/share/zoneinfo/. If "" is given as Zone, the default
-  system time is used.
+  is stored in =/usr/share/zoneinfo/=. If "" is given as Zone, the
+  default system time is used.
 
 - Sample usage:
 
@@ -1896,14 +1904,14 @@ will display "N/A" if for some reason the =date= invocation fails.
 
 - Displays information from xmonad's =_XMONAD_LOG=. You can set this
   property by using =xmonadPropLog= as your log hook in xmonad's
-  configuration, as in the following example (more info [[http://xmonad.org/xmonad-docs/xmonad-contrib/XMonad-Hooks-DynamicLog.html][here]]):
+  configuration, as in the following example (more info [[https://hackage.haskell.org/package/xmonad-contrib-0.16/docs/XMonad-Hooks-DynamicLog.html][here]]):
 
   #+begin_src haskell
     main = do
       spawn "xmobar"
-      xmonad $ defaultConfig {
-        logHook = dynamicLogString defaultPP >>= xmonadPropLog
-      }
+      xmonad $ def
+        { logHook = dynamicLogString defaultPP >>= xmonadPropLog
+        }
   #+end_src
 
   This plugin can be used as a sometimes more convenient alternative to
@@ -1922,9 +1930,9 @@ will display "N/A" if for some reason the =date= invocation fails.
 
   #+begin_src haskell
     myPP = defaultPP { ppTitle = xmobarStrip }
-    main = xmonad $ defaultConfig {
-      logHook = dynamicLogString myPP >>= xmonadPropLog
-    }
+    main = xmonad $ def
+      { logHook = dynamicLogString myPP >>= xmonadPropLog
+      }
   #+end_src
 
 ** =HandleReader Handle Alias=
@@ -2061,14 +2069,15 @@ Writing a plugin for xmobar should be very simple. You need to create a
 data type with at least one constructor.
 
 Next you must declare this data type an instance of the =Exec= class, by
-defining the 1 needed method (alternatively =start= or =run=) and 2
-optional ones (alias and rate):
+defining the 1 needed method (alternatively =start= or =run=) and 3
+optional ones (=alias=, =rate=, and =trigger=):
 
 #+begin_src haskell
-  start :: e -> (String -> IO ()) -> IO ()
-  run   :: e -> IO String
-  rate  :: e -> Int
-  alias :: e -> String
+  start   :: e -> (String -> IO ()) -> IO ()
+  run     :: e -> IO String
+  rate    :: e -> Int
+  alias   :: e -> String
+  trigger :: e -> (Maybe SignalType -> IO ()) -> IO ()
 #+end_src
 
 =start= must receive a callback to be used to display the =String=
@@ -2079,9 +2088,9 @@ an example.
 =run= can be used for simpler plugins. If you define only =run= the
 plugin will be run every second. To overwrite this default you just need
 to implement =rate=, which must return the number of tenth of seconds
-between every successive runs. See =examples/xmobar.hs= for an example
-of a plugin that runs just once, and =src/Xmobar/Plugins/Date.hs= for
-one that implements =rate=.
+between every successive runs. See [[https://github.com/jaor/xmobar/blob/master/examples/xmobar.hs][examples/xmobar.hs]] for an example of
+a plugin that runs just once, and [[https://github.com/jaor/xmobar/blob/master/src/Xmobar/Plugins/Date.hs][src/Xmobar/Plugins/Date.hs]] for one
+that implements =rate=.
 
 Notice that Date could be implemented as:
 
