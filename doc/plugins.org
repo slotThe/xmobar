@@ -7,9 +7,18 @@ xmobar. Some of them are only installed when an optional build option is
 set: we mention that fact, when needed, in their description.
 
 Each monitor has an =alias= to be used in the output template. Monitors
-have default aliases. The sections below describe every monitor in turn,
-but before we provide a list of the configuration options (or /monitor
-arguments/) they all share.
+may have default aliases, see the documentation of the monitor in
+question.
+
+There are two types of arguments: ones that all monitors share (the so
+called /default monitor arguments/) and arguments that are specific to a
+certain monitor.
+
+All Monitors accept a common set of arguments, described below in
+[[Default Monitor Arguments]]. Some monitors also accept additional options
+that are specific to them. When specifying the list of arguments in your
+configuration, the common options come first, followed by =--=, followed
+by any monitor-specific options.
 
 ** Icon patterns
 
@@ -34,13 +43,7 @@ brightness value.
 
 ** Default Monitor Arguments
 
-Monitors accept a common set of arguments, described in the first
-subsection below. In addition, some monitors accept additional options
-that are specific to them. When specifying the list of arguments in your
-configuration, the common options come first, followed by =--=, followed
-by any monitor-specific options.
-
-These are the options available for all monitors below:
+These are the options available for all monitors:
 
 - =-t= /string/ Output template
 
@@ -1544,78 +1547,3 @@ unmap events as well (which =docksEventHook= doesn't).
       where w  = ev_window e
           et = ev_event_type e
 #+end_src
-
-* User plugins
-** Writing a Plugin
-
-Writing a plugin for xmobar should be very simple. You need to create a
-data type with at least one constructor.
-
-Next you must declare this data type an instance of the =Exec= class, by
-defining the 1 needed method (alternatively =start= or =run=) and 3
-optional ones (=alias=, =rate=, and =trigger=):
-
-#+begin_src haskell
-  start   :: e -> (String -> IO ()) -> IO ()
-  run     :: e -> IO String
-  rate    :: e -> Int
-  alias   :: e -> String
-  trigger :: e -> (Maybe SignalType -> IO ()) -> IO ()
-#+end_src
-
-=start= must receive a callback to be used to display the =String=
-produced by the plugin. This method can be used for plugins that need to
-perform asynchronous actions. See =src/Xmobar/Plugins/PipeReader.hs= for
-an example.
-
-=run= can be used for simpler plugins. If you define only =run= the
-plugin will be run every second. To overwrite this default you just need
-to implement =rate=, which must return the number of tenth of seconds
-between every successive runs. See [[https://github.com/jaor/xmobar/blob/master/examples/xmobar.hs][examples/xmobar.hs]] for an example of
-a plugin that runs just once, and [[https://github.com/jaor/xmobar/blob/master/src/Xmobar/Plugins/Date.hs][src/Xmobar/Plugins/Date.hs]] for one
-that implements =rate=.
-
-Notice that Date could be implemented as:
-
-#+begin_src haskell
-  instance Exec Date where
-      alias (Date _ a _) = a
-      start (Date f _ r) = date f r
-
-  date :: String -> Int -> (String -> IO ()) -> IO ()
-  date format r callback = do go
-      where go = do
-              t <- toCalendarTime =<< getClockTime
-              callback $ formatCalendarTime defaultTimeLocale format t
-              tenthSeconds r >> go
-#+end_src
-
-This implementation is equivalent to the one you can read in
-=Plugins/Date.hs=.
-
-=alias= is the name to be used in the output template. Default alias
-will be the data type constructor.
-
-After that your type constructor can be used as an argument for the
-Runnable type constructor =Run= in the =commands= list of the
-configuration options.
-
-** Using a Plugin
-
-To use your new plugin, you need to use a pure Haskell configuration for
-xmobar, and load your definitions there. You can see an example in
-[[./examples/xmobar.hs][examples/xmobar.hs]] showing you how to write a Haskell configuration that
-uses a new plugin, all in one file.
-
-When xmobar runs with the full path to that Haskell file as its argument
-(or if you put it in =~/.config/xmobar/xmobar.hs=), and with the xmobar
-library installed (e.g., with =cabal install --lib xmobar=), the Haskell
-code will be compiled as needed, and the new executable spawned for you.
-
-That's it!
-
-** Configurations written in pure Haskell
-
-xmobar can be used as a pure Haskell program, that is compiled with your
-specific configuration, expressed as Haskell source code. For an
-example, see [[https://gitlab.com/jaor/xmobar-config/][the author's configuration]].

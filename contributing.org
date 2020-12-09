@@ -1,0 +1,119 @@
+* Contributing Changes/Patches to xmobar
+
+Want to contribute to xmobar? You've come to the right place! This
+document will help guide you in this endeavour.
+
+In case you want to make any non-trivial change to xmobar, it's always
+best to talk with the community first. Currently the best way to do that
+is to create an issue on GitHub. There, you can talk through the
+problems you are having, as well as the proposed solution.
+
+** Making the Change
+
+It's best to create a separate branch in your clone of the [[https://github.com/jaor/xmobar/][xmobar repo]]
+and then push this branch to your fork.
+
+If your pull request undergoes several iterations and =master= has
+changed in the meantime, you may be asked to rebase on top of it; in
+this case please don't merge any branches, but actually rebase! This is
+a very nifty feature that =git= offers in order to remain a clean
+history.
+
+Give your commits descriptive names!  Further, it's also highly recommended to
+add a description of /why/ you made a certain change.  The syntax for this is
+*commit message*, blank line, *more description*.  For example:
+
+  #+begin_src shell
+    Commit Message (max. 50 characters)
+
+    Some more useful information of why this change was made; possibly
+    how it connects with other commits in this same pr (wrapped at 72
+    characters).
+  #+end_src
+
+** Opening a Pull Request
+
+Once you have pushed the branch to your fork, making a pull request is
+as easy as visiting that branch; GitHub will then even prompt you for
+it!
+
+Please include the following information in the description of your pull
+request:
+
+- Does your pull request close, or is related to, any existing issues?
+- What does your pull request do?  If you add a new feature, an example
+  of how you would use it would be most appreciated.
+- A brief summary of how your commits fit together to achieve this (if
+  necessary).
+
+Please also remember to update the =changelog.md= file, as well as any
+other documentation that your pull request touches upon.  For example,
+if you add a new plugin you should update the [[./doc/plugins.org][plugins documentation]].
+
+* Writing Your Own Plugin
+
+Writing a plugin for xmobar is very simple!
+
+First, you need to create a data type with at least one constructor.
+Next you must declare this data type an instance of the =Exec= class, by
+defining the 1 needed method (alternatively =start= or =run=) and 3
+optional ones (=alias=, =rate=, and =trigger=):
+
+#+begin_src haskell
+  start   :: e -> (String -> IO ()) -> IO ()
+  run     :: e -> IO String
+  rate    :: e -> Int
+  alias   :: e -> String
+  trigger :: e -> (Maybe SignalType -> IO ()) -> IO ()
+#+end_src
+
+=start= must receive a callback to be used to display the =String=
+produced by the plugin. This method can be used for plugins that need to
+perform asynchronous actions. See =src/Xmobar/Plugins/PipeReader.hs= for
+an example.
+
+=run= can be used for simpler plugins. If you define only =run= the
+plugin will be run every second. To overwrite this default you just need
+to implement =rate=, which must return the number of tenth of seconds
+between every successive runs. See [[https://github.com/jaor/xmobar/blob/master/examples/xmobar.hs][examples/xmobar.hs]] for an example of
+a plugin that runs just once, and [[https://github.com/jaor/xmobar/blob/master/src/Xmobar/Plugins/Date.hs][src/Xmobar/Plugins/Date.hs]] for one
+that implements =rate=.
+
+Notice that Date could be implemented as:
+
+#+begin_src haskell
+  instance Exec Date where
+      alias (Date _ a _) = a
+      start (Date f _ r) = date f r
+
+  date :: String -> Int -> (String -> IO ()) -> IO ()
+  date format r callback = do go
+      where go = do
+              t <- toCalendarTime =<< getClockTime
+              callback $ formatCalendarTime defaultTimeLocale format t
+              tenthSeconds r >> go
+#+end_src
+
+This implementation is equivalent to the one you can read in
+=Plugins/Date.hs=.
+
+=alias= is the name to be used in the output template. Default alias
+will be the data type constructor.
+
+After that your type constructor can be used as an argument for the
+Runnable type constructor =Run= in the =commands= list of the
+configuration options.
+
+** Using a Plugin
+
+To use your new plugin, you need to use a pure Haskell configuration for
+xmobar, and load your definitions there. You can see an example in
+[[./examples/xmobar.hs][examples/xmobar.hs]] showing you how to write a Haskell configuration that
+uses a new plugin, all in one file.
+
+When xmobar runs with the full path to that Haskell file as its argument
+(or if you put it in =~/.config/xmobar/xmobar.hs=), and with the xmobar
+library installed (e.g., with =cabal install --lib xmobar=), the Haskell
+code will be compiled as needed, and the new executable spawned for you.
+
+That's it!
