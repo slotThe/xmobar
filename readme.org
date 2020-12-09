@@ -21,6 +21,31 @@ These are some xmobar [[file:doc/screenshots][screenshots]] using the author's c
 This is the [[https://xmobar.org/changelog.html][changelog]] for recent releases.
 
 * Installation
+** From your Systems Package Manager
+
+Xmobar is probably available from your distribution package manager!
+Most distributions do compile with the =all_extensions= flag, so you
+don't have to. For more information on that, see the [[Optional features][optional features]]
+item below.
+
+*** Arch Linux
+
+#+begin_src shell
+  pacman -S xmobar
+#+end_src
+
+*** Debian/Ubuntu based
+
+#+begin_src shell
+  apt install xmobar
+#+end_src
+
+*** Void Linux
+
+#+begin_src shell
+  xbps-install xmobar
+#+end_src
+
 ** Using cabal-install
 
 Xmobar is available from [[http://hackage.haskell.org/package/xmobar/][Hackage]], and you can install it using
