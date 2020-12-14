@@ -18,7 +18,20 @@ All Monitors accept a common set of arguments, described below in
 [[Default Monitor Arguments]]. Some monitors also accept additional options
 that are specific to them. When specifying the list of arguments in your
 configuration, the common options come first, followed by =--=, followed
-by any monitor-specific options.
+by any monitor-specific options. For example, the following [[=Battery Args RefreshRate=][Battery]]
+configuration first sets the global =template= and =Low= arguments and
+then specifies the battery-specific =off= option.
+
+#+begin_src haskell
+  Run Battery
+    [ "--template", "<acstatus>"
+    , "--Low"     , "15"
+    -- battery specific options start here.
+    , "--"
+    , "--off"     , "<left> (<timeleft>)"
+    ]
+    100
+#+end_src
 
 ** Icon patterns
 

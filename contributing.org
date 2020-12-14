@@ -5,7 +5,7 @@ document will help guide you in this endeavour.
 
 In case you want to make any non-trivial change to xmobar, it's always
 best to talk with the community first. Currently the best way to do that
-is to create an issue on GitHub. There, you can talk through the
+is to [[https://github.com/jaor/xmobar/issues/new][create an issue]] on GitHub. There, you can talk through the
 problems you are having, as well as the proposed solution.
 
 ** Making the Change
@@ -56,7 +56,7 @@ Writing a plugin for xmobar is very simple!
 
 First, you need to create a data type with at least one constructor.
 Next you must declare this data type an instance of the =Exec= class, by
-defining the 1 needed method (alternatively =start= or =run=) and 3
+defining the one needed method (alternatively =start= or =run=) and 3
 optional ones (=alias=, =rate=, and =trigger=):
 
 #+begin_src haskell
