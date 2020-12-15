@@ -1286,6 +1286,33 @@ choice.
   =StdinReader=. For instance, it allows you to (re)start xmobar outside
   xmonad.
 
+** =UnsafeXMonadLog=
+
+- Aliases to UnsafeXMonadLog
+- Displays any text received by xmobar on the =_XMONAD_LOG= atom.
+- Will not do anything to the text received. This means you can pass
+  xmobar dynamic actions. Be careful to escape (using =<raw=…>=) or
+  remove tags from dynamic text that you pipe through to xmobar in this
+  way.
+
+- Sample usage: Send the list of your workspaces, enclosed by actions
+  tags, to xmobar.  This enables you to switch to a workspace when you
+  click on it in xmobar!
+
+  #+begin_src shell
+    <action=`xdotool key alt+1`>ws1</action> <action=`xdotool key alt+1`>ws2</action>
+  #+end_src
+
+- If you use xmonad, It is advised that you still use =xmobarStrip= for
+  the =ppTitle= in your logHook:
+
+  #+begin_src haskell
+    myPP = defaultPP { ppTitle = xmobarStrip }
+    main = xmonad $ def
+      { logHook = dynamicLogString myPP >>= xmonadPropLog
+      }
+  #+end_src
+
 ** =StdinReader=
 
 - Aliases to StdinReader
@@ -1299,34 +1326,16 @@ choice.
 
 - Aliases to UnsafeStdinReader
 - Displays any text received by xmobar on its standard input.
-- Will not do anything to the text received. This means you can pass
-  dynamic actions via stdin. Be careful to escape (using =<raw=…>=) or
-  remove tags from dynamic text that you pipe-thru to xmobar's standard
-  input, e.g. window's title.
-- Sample usage: send to xmobar's stdin the list of your workspaces
-  enclosed by actions tags that switches the workspaces to be able to
-  switch workspaces by clicking on xmobar:
+- Similar to [[=UnsafeXMonadLog=][UnsafeXMonadLog]], in the sense that it does not strip any
+  actions from the received text, only using =stdin= and not a property
+  atom of the root window. Please be equally carefully when using this
+  as when using =UnsafeXMonadLog=!
 
-  #+begin_src shell
-    <action=`xdotool key alt+1`>ws1</action> <action=`xdotool key alt+1`>ws2</action>
-  #+end_src
 
-** =UnsafeXMonadLog=
 
-- Aliases to UnsafeXMonadLog
 
-- Similar to =StdinReader= versus =UnsafeStdinReader=, this does not
-  strip =<action ...>= tags from XMonad's =_XMONAD_LOG=.
 
-- It is advised that you still use =xmobarStrip= for the ppTitle in your
-  logHook:
 
-  #+begin_src haskell
-    myPP = defaultPP { ppTitle = xmobarStrip }
-    main = xmonad $ def
-      { logHook = dynamicLogString myPP >>= xmonadPropLog
-      }
-  #+end_src
 
 ** =CommandReader "/path/to/program" Alias=
 
